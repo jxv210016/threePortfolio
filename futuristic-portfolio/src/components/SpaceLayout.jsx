@@ -1,44 +1,22 @@
 import React, { useRef, useEffect, useState } from "react";
-import { Canvas, useThree } from "@react-three/fiber";
-import { OrbitControls, Stars } from "@react-three/drei";
+import { Canvas, useThree, useFrame } from "@react-three/fiber";
+import { Stars, OrbitControls, Html } from "@react-three/drei";
 import Planet from "./Planet";
-import gsap from "gsap";
+import * as THREE from "three";
+import "../styles/planetContent.css"; // Use your existing CSS
 
 const SpaceLayout = () => {
   const [currentPlanetIndex, setCurrentPlanetIndex] = useState(0);
+  const [showInfo, setShowInfo] = useState(false);
   const cameraRef = useRef();
 
-  const planetPositions = [
-    { x: 0, y: 0, z: 0 },
-    { x: 100, y: 0, z: 0 },
-    { x: 200, y: 0, z: 0 },
-    { x: 300, y: 0, z: 0 },
-  ];
-
-  const moveToPlanet = (index, camera) => {
-    if (index >= 0 && index < planetPositions.length) {
-      const targetPosition = planetPositions[index];
-
-      console.log(`Moving to planet index: ${index}`, targetPosition);
-
-      // Smoothly move camera to the target planet
-      gsap.to(camera.position, {
-        x: targetPosition.x + 20, // Adjust to change distance from the planet
-        y: targetPosition.y + 10,
-        z: targetPosition.z + 30,
-        duration: 2, // Duration of the transition
-        ease: "power2.inOut", // Smooth easing
-        onUpdate: () => {
-          camera.lookAt(targetPosition.x, targetPosition.y, targetPosition.z);
-        },
-        onComplete: () => {
-          console.log(`Arrived at planet index: ${index}`);
-        },
-      });
-
-      setCurrentPlanetIndex(index);
-    }
+  const handleMoveToPlanet = (index) => {
+    setCurrentPlanetIndex(index);
   };
+
+  useEffect(() => {
+    setShowInfo(false); // Hide info during transition
+  }, [currentPlanetIndex]);
 
   return (
     <>
@@ -57,28 +35,84 @@ const SpaceLayout = () => {
         }}
       >
         <Scene
-          moveToPlanet={moveToPlanet}
           currentPlanetIndex={currentPlanetIndex}
+          setShowInfo={setShowInfo}
+          showInfo={showInfo}
+        />
+        <OrbitControls />
+        <NavigationButtons
+          currentPlanetIndex={currentPlanetIndex}
+          moveToPlanet={handleMoveToPlanet}
         />
       </Canvas>
-      <NavigationButtons
-        moveToPlanet={(index) => {
-          if (cameraRef.current) {
-            moveToPlanet(index, cameraRef.current);
-          }
-        }}
-        currentPlanetIndex={currentPlanetIndex}
-      />
     </>
   );
 };
 
-const Scene = ({ moveToPlanet, currentPlanetIndex }) => {
+const Scene = ({ currentPlanetIndex, setShowInfo, showInfo }) => {
   const { camera } = useThree();
+  const [targetPosition, setTargetPosition] = useState([0, 0, 0]);
+  const [moving, setMoving] = useState(false);
+  const [zoomPhase, setZoomPhase] = useState("zoomOut");
+
+  const planetPositions = [
+    { x: 0, y: 0, z: 0 },
+    { x: 100, y: 0, z: 0 },
+    { x: 200, y: 0, z: 0 },
+    { x: 300, y: 0, z: 0 },
+  ];
 
   useEffect(() => {
-    moveToPlanet(currentPlanetIndex, camera);
-  }, [currentPlanetIndex, camera, moveToPlanet]);
+    const targetPos = planetPositions[currentPlanetIndex];
+    setTargetPosition([targetPos.x, targetPos.y, targetPos.z]);
+    setMoving(true);
+    setZoomPhase("zoomOut");
+  }, [currentPlanetIndex]);
+
+  useFrame(() => {
+    if (moving) {
+      const currentPos = camera.position;
+      const targetPos = new THREE.Vector3(...targetPosition);
+
+      if (zoomPhase === "zoomOut") {
+        camera.fov = THREE.MathUtils.lerp(camera.fov, 70, 0.05);
+        camera.updateProjectionMatrix();
+
+        if (Math.abs(camera.fov - 70) < 0.1) {
+          setZoomPhase("moveRight");
+        }
+      } else if (zoomPhase === "moveRight") {
+        currentPos.lerp(
+          targetPos.clone().add(new THREE.Vector3(0, 0, 50)),
+          0.05
+        );
+
+        camera.lookAt(targetPos);
+
+        if (
+          currentPos.distanceTo(
+            targetPos.clone().add(new THREE.Vector3(0, 0, 50))
+          ) < 0.1
+        ) {
+          setZoomPhase("zoomIn");
+        }
+      } else if (zoomPhase === "zoomIn") {
+        camera.fov = THREE.MathUtils.lerp(camera.fov, 60, 0.05);
+        camera.updateProjectionMatrix();
+
+        currentPos.lerp(
+          targetPos.clone().add(new THREE.Vector3(0, 0, 30)),
+          0.05
+        );
+        camera.lookAt(targetPos);
+
+        if (Math.abs(camera.fov - 60) < 0.1) {
+          setMoving(false);
+          setTimeout(() => setShowInfo(true), 500); // Delay to trigger fade-in
+        }
+      }
+    }
+  });
 
   return (
     <>
@@ -98,12 +132,30 @@ const Scene = ({ moveToPlanet, currentPlanetIndex }) => {
       />
       <Planet
         position={{ x: 0, y: 0, z: 0 }}
-        size={[2, 32, 32]}
-        texture="/textures/mars_texture.jpg"
-        bumpMap="/textures/mars_bump.jpg"
-        emissiveColor="red"
-        title="Projects"
-        content="Here are some of the projects I've worked on..."
+        size={[2.5, 32, 32]}
+        texture="/textures/neptune_texture.jpg"
+        bumpMap={null}
+        emissiveColor="blue"
+        title="About Me"
+        content={
+          <div>
+            <p>Get To Know More</p>
+            <h2>Jay Vanam</h2>
+            <p>
+              B.S Computer Science
+              <br />
+              May 2025
+            </p>
+            <p>Experience: 6 Months in Frontend Development</p>
+            <p>
+              👋 I'm Jay, a junior at the University of Texas at Dallas. I enjoy
+              video editing, photography, listening to music, and sleeping. I
+              also love football and F1. I'm a die-hard Cowboys fan and a
+              Ferrari enthusiast.
+            </p>
+          </div>
+        }
+        showInfo={showInfo}
       />
       <Planet
         position={{ x: 100, y: 0, z: 0 }}
@@ -112,16 +164,96 @@ const Scene = ({ moveToPlanet, currentPlanetIndex }) => {
         bumpMap="/textures/venus_bump.jpg"
         emissiveColor="orange"
         title="Skills"
-        content="Here are some of the skills I have..."
+        content={
+          <div>
+            <p>Explore My Skills</p>
+            <h3>Frontend Development</h3>
+            <ul>
+              <li>HTML: Intermediate</li>
+              <li>CSS: Intermediate</li>
+              <li>JavaScript: Basic</li>
+              <li>React.js: Intermediate</li>
+              <li>Bootstrap: Basic</li>
+              <li>Material UI: Basic</li>
+            </ul>
+            <h3>Backend Development</h3>
+            <ul>
+              <li>Python: Intermediate</li>
+              <li>Java: Intermediate</li>
+              <li>C++: Intermediate</li>
+              <li>Flask: Intermediate</li>
+              <li>Django: Basic</li>
+              <li>Git: Basic</li>
+            </ul>
+          </div>
+        }
+        showInfo={showInfo}
       />
       <Planet
         position={{ x: 200, y: 0, z: 0 }}
-        size={[2.5, 32, 32]}
-        texture="/textures/neptune_texture.jpg"
-        bumpMap={null}
-        emissiveColor="blue"
-        title="About Me"
-        content="Here's some information about me..."
+        size={[2, 32, 32]}
+        texture="/textures/mars_texture.jpg"
+        bumpMap="/textures/mars_bump.jpg"
+        emissiveColor="red"
+        title="Projects"
+        content={
+          <div>
+            <p>Browse My Recent Projects</p>
+            <div className="project-container">
+              <div className="project-item">
+                <img src="./assets/Trendalytics.png" alt="Trendalytics" />
+                <h3>Trendalytics</h3>
+                <button
+                  onClick={() =>
+                    window.open("https://github.com/jxv210016/Trendalytics")
+                  }
+                >
+                  GitHub
+                </button>
+                <button
+                  onClick={() =>
+                    window.open("https://www.youtube.com/watch?v=keIBs8Ej2Y8")
+                  }
+                >
+                  Demo
+                </button>
+              </div>
+              <div className="project-item">
+                <img src="./assets/EntryWizard.png" alt="Entry Wizard" />
+                <h3>Entry Wizard</h3>
+                <button
+                  onClick={() =>
+                    window.open("https://github.com/jxv210016/EntryWizard")
+                  }
+                >
+                  GitHub
+                </button>
+                <button
+                  onClick={() => window.open("https://youtu.be/5iuDD4GAuj0")}
+                >
+                  Demo
+                </button>
+              </div>
+              <div className="project-item">
+                <img src="./assets/GitReviews.png" alt="GitReviews" />
+                <h3>GitReviews</h3>
+                <button
+                  onClick={() =>
+                    window.open("https://github.com/risheelg01/GitReviews")
+                  }
+                >
+                  GitHub
+                </button>
+                <button
+                  onClick={() => window.open("https://youtu.be/SydE4xkuQLI")}
+                >
+                  Demo
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+        showInfo={showInfo}
       />
       <Planet
         position={{ x: 300, y: 0, z: 0 }}
@@ -130,47 +262,43 @@ const Scene = ({ moveToPlanet, currentPlanetIndex }) => {
         bumpMap="/textures/pluto_bump.jpg"
         emissiveColor="purple"
         title="Contact"
-        content="Here’s how you can get in touch with me..."
+        content={
+          <div>
+            <p>Get in Touch</p>
+            <p>
+              Email:{" "}
+              <a href="mailto:jashithvanam@gmail.com">jashithvanam@gmail.com</a>
+            </p>
+            <p>
+              LinkedIn:{" "}
+              <a href="https://www.linkedin.com/in/jay-vanam/">Jay Vanam</a>
+            </p>
+          </div>
+        }
+        showInfo={showInfo}
       />
     </>
   );
 };
 
 const NavigationButtons = ({ currentPlanetIndex, moveToPlanet }) => {
-  const handleNext = () => {
-    if (currentPlanetIndex < 3) {
-      console.log("Next button clicked. Current index:", currentPlanetIndex);
-      moveToPlanet(currentPlanetIndex + 1);
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentPlanetIndex > 0) {
-      console.log(
-        "Previous button clicked. Current index:",
-        currentPlanetIndex
-      );
-      moveToPlanet(currentPlanetIndex - 1);
-    }
-  };
-
   return (
-    <div
-      style={{
-        position: "absolute",
-        bottom: "10px",
-        left: "50%",
-        transform: "translateX(-50%)",
-        zIndex: 10,
-      }}
-    >
-      <button onClick={handlePrevious} disabled={currentPlanetIndex === 0}>
-        Previous
-      </button>
-      <button onClick={handleNext} disabled={currentPlanetIndex === 3}>
-        Next
-      </button>
-    </div>
+    <Html position={[0, -3, 0]} transform>
+      <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+        <button
+          onClick={() => moveToPlanet(currentPlanetIndex - 1)}
+          disabled={currentPlanetIndex === 0}
+        >
+          Previous
+        </button>
+        <button
+          onClick={() => moveToPlanet(currentPlanetIndex + 1)}
+          disabled={currentPlanetIndex === 3}
+        >
+          Next
+        </button>
+      </div>
+    </Html>
   );
 };
 
