@@ -1,10 +1,10 @@
 import React from "react";
-import CityLayout from "./components/CityLayout";
+import SpaceLayout from "./components/SpaceLayout";
 
 const App = () => {
   return (
     <div>
-      <CityLayout />
+      <SpaceLayout />
     </div>
   );
 };
