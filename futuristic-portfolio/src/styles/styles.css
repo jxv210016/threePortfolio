@@ -1,11 +1,94 @@
-body,
-html,
-#root,
-canvas {
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  display: block;
-  background-color: #000;
+/* Center the canvas and landing page elements */
+.canvas-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+}
+
+/* Landing page styles */
+.landing-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.8); /* Dark overlay */
+  z-index: 2; /* Overlap the cube */
+}
+
+.landing-title {
+  font-size: 4rem;
+  color: white;
+  margin-bottom: 2rem;
+  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.next-button {
+  padding: 1rem 2rem;
+  font-size: 1.5rem;
+  color: white;
+  background-color: #ff5733; /* Matches front cube color */
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.next-button:hover {
+  background-color: #ff704d;
+  transform: scale(1.05);
+}
+
+.next-button:active {
+  transform: scale(0.95);
+}
+
+/* Main button container styles */
+.button-container {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 20px;
+  z-index: 3;
+}
+
+.back-button,
+.next-button {
+  padding: 0.75rem 1.5rem;
+  font-size: 1.2rem;
+  background-color: #3357ff; /* Matches left face color */
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.back-button:hover,
+.next-button:hover {
+  background-color: #4d6bff;
+  transform: scale(1.05);
+}
+
+.back-button:active,
+.next-button:active {
+  transform: scale(0.95);
+}
+
+/* Adjust button styles for different cube faces */
+.back-button {
+  background-color: #ff33ff; /* Matches bottom face color */
+}
+
+.back-button:hover {
+  background-color: #ff66ff;
 }

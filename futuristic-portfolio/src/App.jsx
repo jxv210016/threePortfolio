@@ -1,10 +1,15 @@
-import React from "react";
-import SpaceLayout from "./components/SpaceLayout";
+import React, { useEffect } from "react";
+import Cube from "./components/Cube";
+import "./styles/styles.css";
 
 const App = () => {
+  useEffect(() => {
+    // Add any additional logic here if needed
+  }, []);
+
   return (
-    <div>
-      <SpaceLayout />
+    <div className="app">
+      <Cube />
     </div>
   );
 };
